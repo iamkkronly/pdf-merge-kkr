@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Merge PDF Files</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.16.0/pdf-lib.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+        input { margin: 10px; }
+        button { padding: 10px 15px; background-color: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+
+    <h2>Merge PDF Files</h2>
+    <input type="file" id="pdfFiles" multiple accept="application/pdf">
+    <br>
+    <button onclick="mergePDFs()">Merge PDFs</button>
+
+    <script>
+        async function mergePDFs() {
+            const input = document.getElementById("pdfFiles");
+            if (input.files.length < 2) {
+                alert("Please select at least two PDF files.");
+                return;
+            }
+
+            const { PDFDocument } = PDFLib;
+            const mergedPdf = await PDFDocument.create();
+
+            for (let file of input.files) {
+                const reader = new FileReader();
+                reader.readAsArrayBuffer(file);
+                await new Promise(resolve => {
+                    reader.onload = async () => {
+                        const pdfBytes = reader.result;
+                        const pdfDoc = await PDFDocument.load(pdfBytes);
+                        const pages = await mergedPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
+                        pages.forEach(page => mergedPdf.addPage(page));
+                        resolve();
+                    };
+                });
+            }
+
+            const mergedPdfBytes = await mergedPdf.save();
+            downloadMergedPDF(mergedPdfBytes);
+        }
+
+        function downloadMergedPDF(pdfBytes) {
+            const blob = new Blob([pdfBytes], { type: "application/pdf" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "Merged_PDF.pdf";
+            link.click();
+        }
+    </script>
+
+</body>
+</html>
